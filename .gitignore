@@ -1,2 +1,6 @@
 __pycache__
 .DS_Store
+.venv/
+auth.txt
+config.ini
+dedupe.db

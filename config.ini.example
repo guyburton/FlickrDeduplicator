@@ -1,0 +1,5 @@
+[FLICKR]
+API_KEY = YOUR-API-KEY-HERE
+API_SECRET = YOUR-API-SECRET-KEY
+
+; you will also need to create a file called auth.txt following the example at https://github.com/alexis-mignon/python-flickr-api/wiki/Flickr-API-Keys-and-Authentication
