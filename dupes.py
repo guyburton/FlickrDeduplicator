@@ -21,7 +21,7 @@ def initDb():
     c.execute('''CREATE TABLE IF NOT EXISTS image_hashes
                  (id text, hash text)''')
 
-    cache_size = c.execute('''SELECT COUNT(hash) FROM image_hashes''').fetchone()
+    cache_size = c.execute('''SELECT COUNT(id) FROM image_hashes''').fetchone()
 
     if cache_size:
         print ('Found ' + str(cache_size[0]) + ' hashes in cache')
@@ -59,10 +59,6 @@ class DPhoto():
     def getId(self):
         return self.photo.id
 
-    def rename(self):
-        print("Renaming to " + self.getTitle())
-        #self.photo.setMeta(title=new_title)
-
     def hash(self):
         photo_file = self.photo.getPhotoFile('Square')
         
@@ -77,6 +73,10 @@ class DPhoto():
             if debug:
                 print ('Photo id: ' + self.photo.id + ' ' + self.photo.title + ' hash: ' + imagehash)
             return imagehash
+
+    def delete(self):
+        # self.photo.delete
+        pass
 
 def store_hash(dphoto):
     c = conn.cursor()
@@ -96,8 +96,7 @@ def store_hash(dphoto):
         print("Cached hash for " + dphoto.getId())
     return imagehash
 
-
-def findDuplicates():
+def getAllPhotoInfo():
     user = flickr_api.test.login()
 
     photos = user.getPhotos(per_page=500)
@@ -108,28 +107,33 @@ def findDuplicates():
 
     pages = photos.info.pages
     for page in range(1, pages + 1):
-        print('Processing photos, page ' + str(page) + ' / ' + str(pages))
+        print('Indexing photos, page ' + str(page) + ' / ' + str(pages))
         photos = user.getPhotos(page=page, per_page=500)
         for photo in photos:
             if photo.id in indexedById:
-                raise Exception('already seen id ' + photo.id)
+                raise Exception('Already seen id ' + photo.id + ' (must be a programming error)')
             indexedById[photo.id] = photo
 
+    return indexedById.values()
+
+def hashPhotos(photos):
     hashes = defaultdict(set)   
 
-    c = conn.cursor()
     count = 0       
-    for photo in indexedById.values():
+    for photo in photos:
         dphoto = DPhoto(photo, count)
-
-        if dphoto.getExtension().lower() not in ['.jpg', '.jpeg']:
-            print ("Ignoring " + dphoto.getOriginalTitle())
-            continue
         
         hashes[store_hash(dphoto)].add(dphoto)
         count += 1
 
     print ("Hashed " + str(len(hashes)) + " images")
+    return hashes
+
+
+def findDuplicates():
+    allPhotos = getAllPhotoInfo()
+
+    hashes = hashPhotos(allPhotos)
 
     to_delete = set()   
     for photos in hashes.values():
